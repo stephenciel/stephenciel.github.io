@@ -1,65 +1,10 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="utf-8">
-<title>AngularJS 路由实例 - 菜鸟教程</title>
-<script src="https://cdn.staticfile.org/angular.js/1.7.0/angular.min.js"></script>
-<script src="angular-route.min.js"></script>
+    <meta charset="utf-8">
+    <title>首页</title>
 </head>
-<body ng-app='myApp' >
-
-    <h2>AngularJS 路由应用</h2>
-    <ul>
-        <li><a href="#!/1">首页</a></li>
-        <li><a href="#!/2">电脑</a></li>
-        <li><a href="#!/3">打印机</a></li>
-        <li><a href="#!/4">其他</a></li>
-    </ul>
-     
-    
-    <script>
-        app=angular.module('myApp',['ngRoute'])
-        .config(['$routeProvider', function($routeProvider){
-            $routeProvider
-            .when('/1',{template:'1'})
-            .when('/2',{template:'{{baidu()}}{{b()}}<a href="http://www.baidu.com">百度</a>'})
-            .when('/3',{template:'{{baidu()}}{{b()}}<a href="http://www.itheima.com">黑马</a>'})
-            .when('/4',{template:'{{ha()}}'})
-        }]);
-
-        app.controller("myCtrl", function($scope) {
-    
-    $scope.list=[{a:'百度',b:"http://www.baidu.com"},{a:'黑马',b:"http://www.itheima.com/"},{a:'three',b:3}]
-    $scope.a=0;
-    $scope.c=0;
-    $scope.myFunc=function(){
-    $scope.c+=1;
-    }
-    $scope.b=function(){
-    $scope.e="http://www.itheima.com";
-    // $scope.a="<a href='#'>吃饭饭</a>";
-    return $scope.a="<a href='#'>吃饭饭</a>";
-    }
-    $scope.baidu=function(){
-        
-    // $scope.e="http://www.baidu.com"
-    }
-     $scope.ha=function(){
-    $scope.e=" ";
-    $scope.a=" ";
-    }
-});
-    </script>
-
-    <div ng-controller='myCtrl'>
-
-         
-         <div >a=<span ng-view></span><div>
-             aa= <a href="{{a}}"/>黑马<a>{{a}}<br>s{{e}}
-       
-         <!-- <select ng-options="item.b as item.a for item in list" ng-model="a" ng-change="myFunc()"  ng-init="a=list[0].b" ></select> -->
-            
-    </div>
-
+<body>
+<a href="常用快捷键.html">常用快捷键</a>
 </body>
 </html>
