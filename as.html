@@ -6,8 +6,8 @@
 <script src="https://cdn.staticfile.org/angular.js/1.7.0/angular.min.js"></script>
 <script src="angular-route.min.js"></script>
 </head>
-<body ng-app='myApp' >
-
+<body ng-app='routingDemoApp'>
+ 
     <h2>AngularJS 路由应用</h2>
     <ul>
         <li><a href="#!/1">首页</a></li>
@@ -16,50 +16,16 @@
         <li><a href="#!/4">其他</a></li>
     </ul>
      
-    
+    <div ng-view></div>
     <script>
-        app=angular.module('myApp',['ngRoute'])
+        angular.module('routingDemoApp',['ngRoute'])
         .config(['$routeProvider', function($routeProvider){
             $routeProvider
-            .when('/1',{template:'1'})
-            .when('/2',{template:'{{baidu()}}{{b()}}<a href="http://www.baidu.com">百度</a>'})
-            .when('/3',{template:'{{baidu()}}{{b()}}<a href="http://www.itheima.com">黑马</a>'})
-            .when('/4',{template:'{{ha()}}'})
+            .when('/1',{template:'<div><a href="http://www.baidu.com">这是首页页面</a></div>'})
+            .when('/2',{template:'这是电脑分类页面'})
+            .when('/3',{template:'这是打印机页面'})
+            .otherwise({redirectTo:'/1'});
         }]);
-
-        app.controller("myCtrl", function($scope) {
-    
-    $scope.list=[{a:'百度',b:"http://www.baidu.com"},{a:'黑马',b:"http://www.itheima.com/"},{a:'three',b:3}]
-    $scope.a=0;
-    $scope.c=0;
-    $scope.myFunc=function(){
-    $scope.c+=1;
-    }
-    $scope.b=function(){
-    $scope.e="http://www.itheima.com";
-    // $scope.a="<a href='#'>吃饭饭</a>";
-    return $scope.a="<a href='#'>吃饭饭</a>";
-    }
-    $scope.baidu=function(){
-        
-    // $scope.e="http://www.baidu.com"
-    }
-     $scope.ha=function(){
-    $scope.e=" ";
-    $scope.a=" ";
-    }
-});
     </script>
-
-    <div ng-controller='myCtrl'>
-
-         
-         <div >a=<span ng-view></span><div>
-             aa= <a href="{{a}}"/>黑马<a>{{a}}<br>s{{e}}
-       
-         <!-- <select ng-options="item.b as item.a for item in list" ng-model="a" ng-change="myFunc()"  ng-init="a=list[0].b" ></select> -->
-            
-    </div>
-
 </body>
 </html>
