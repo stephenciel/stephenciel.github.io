@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>A4 2×3 图片布局（无边框，支持渲染质量调整）</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+      padding:18px;
+      background:#f4f6f8;
+      color:#111827;
+    }
+    h2 { margin:0 0 12px 0; }
+    .controls { display:flex; gap:12px; align-items:center; margin-bottom:14px; flex-wrap:wrap; }
+    label { font-size:13px; display:flex; flex-direction:column; gap:6px; }
+    input[type="file"] { display:block; }
+    button {
+      padding:8px 14px; border-radius:8px; border:1px solid #cbd5e1;
+      background:#fff; cursor:pointer;
+    }
+    button:disabled { opacity:0.6; cursor:not-allowed; }
+    .wrap { display:flex; gap:18px; align-items:flex-start; flex-wrap:wrap; }
+    /* A4 预览保留阴影但不显示边框 */
+    .a4 {
+      width:210mm; height:297mm; background:white; box-shadow:0 6px 20px rgba(0,0,0,0.12);
+      /* 去掉边框显示，以便导出时无边框 */
+      border: none;
+      padding:6mm; box-sizing:border-box;
+    }
+    .grid {
+      width:100%; height:100%;
+      display:grid; grid-template-columns:1fr 1fr; grid-template-rows:repeat(3, 1fr);
+      gap:6mm;
+    }
+    .cell {
+      display:flex; align-items:center; justify-content:center; overflow:hidden;
+      /* 去掉边框，背景也设为白，确保导出干净 */
+      border: none;
+      background: #ffffff;
+      position:relative;
+    }
+    .cell img { max-width:100%; max-height:100%; object-fit:contain; display:block; }
+    .sidebar { min-width:260px; }
+    .note { font-size:13px; color:#374151; margin-top:10px; max-width:360px; }
+    .small { font-size:12px; color:#4b5563; }
+    /* 缩略区域也去掉边框 */
+    .thumb-box { padding:8px; background:#fff; border:none; box-shadow:none; }
+    @media (max-width:980px) { .wrap{flex-direction:column} .a4{transform:scale(0.8);transform-origin:left top} }
+  </style>
+</head>
+<body>
+  <h2>A4 2×3 图片布局（无边框）</h2>
+
+  <div class="controls">
+    <label>
+      上传 图1（左列）
+      <input id="img1file" type="file" accept="image/*">
+    </label>
+
+    <label>
+      上传 图2（右列）
+      <input id="img2file" type="file" accept="image/*">
+    </label>
+
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button id="generateBtn">生成预览</button>
+        <button id="refreshPreviewBtn">用当前质量刷新预览</button>
+        <button id="downloadPdfBtn">导出为 PDF（A4）</button>
+      </div>
+      <div class="small">
+        渲染质量（Render Quality，越大导出越清晰但越慢/占内存）：
+        <input id="qualityRange" type="range" min="1" max="6" step="1" value="3" style="vertical-align:middle;">
+        <span id="qualityVal">3</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div>
+      <div class="a4" id="a4page" aria-label="A4 预览">
+        <div class="grid" id="grid">
+          <div class="cell"><img id="c1" alt="cell1 placeholder"></div>
+          <div class="cell"><img id="c2" alt="cell2 placeholder"></div>
+
+          <div class="cell"><img id="c3" alt="cell3 placeholder"></div>
+          <div class="cell"><img id="c4" alt="cell4 placeholder"></div>
+
+          <div class="cell"><img id="c5" alt="cell5 placeholder"></div>
+          <div class="cell"><img id="c6" alt="cell6 placeholder"></div>
+        </div>
+      </div>
+
+      <p class="note">
+        使用说明：上传两张图片 → 点击“生成预览”。如需更高清晰度导出，调高 Render Quality（例如 4 或 5），再点击“导出为 PDF（A4）”。
+      </p>
+    </div>
+
+    <div class="sidebar">
+      <h4>缩略 / 原始图像</h4>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div class="thumb-box">
+          <strong>图1 缩略</strong><br>
+          <img id="thumb1" style="max-width:220px;max-height:140px;display:block;margin-top:8px;" alt="">
+        </div>
+        <div class="thumb-box">
+          <strong>图2 缩略</strong><br>
+          <img id="thumb2" style="max-width:220px;max-height:140px;display:block;margin-top:8px;" alt="">
+        </div>
+      </div>
+
+      <div style="margin-top:12px;">
+        <p class="small"><strong>注意：</strong></p>
+        <ul class="small">
+          <li>Render Quality 越大，导出 PDF 的分辨率越高，但会显著增加内存和导出时间（尤其在低配机器上）。</li>
+          <li>建议先试 2–3，再按需要提升至 4 或 5。如果浏览器卡顿请降低数值或刷新页面。</li>
+          <li>导出时使用 html2canvas 将页面渲染为图片再嵌入 PDF，结果与页面预览保持一致（无边框）。</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- 依赖：html2canvas 与 jsPDF（CDN） -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <script>
+    (function(){
+      const img1file = document.getElementById('img1file');
+      const img2file = document.getElementById('img2file');
+      const generateBtn = document.getElementById('generateBtn');
+      const refreshPreviewBtn = document.getElementById('refreshPreviewBtn');
+      const downloadPdfBtn = document.getElementById('downloadPdfBtn');
+      const qualityRange = document.getElementById('qualityRange');
+      const qualityVal = document.getElementById('qualityVal');
+
+      const cells = [
+        document.getElementById('c1'),
+        document.getElementById('c2'),
+        document.getElementById('c3'),
+        document.getElementById('c4'),
+        document.getElementById('c5'),
+        document.getElementById('c6'),
+      ];
+
+      const thumb1 = document.getElementById('thumb1');
+      const thumb2 = document.getElementById('thumb2');
+      const a4page = document.getElementById('a4page');
+
+      let dataUrl1 = null;
+      let dataUrl2 = null;
+      let imgObj1 = null; // Image objects (保留自然尺寸)
+      let imgObj2 = null;
+
+      qualityVal.textContent = qualityRange.value;
+      qualityRange.addEventListener('input', () => {
+        qualityVal.textContent = qualityRange.value;
+      });
+
+      function readImageFile(file) {
+        return new Promise((resolve, reject) => {
+          if (!file) return resolve(null);
+          const fr = new FileReader();
+          fr.onload = () => {
+            const img = new Image();
+            img.onload = () => resolve({ dataUrl: fr.result, img });
+            img.onerror = err => reject(err);
+            img.crossOrigin = 'anonymous';
+            img.src = fr.result;
+          };
+          fr.onerror = reject;
+          fr.readAsDataURL(file);
+        });
+      }
+
+      function fillGridWithImages() {
+        const leftIdx = [0,2,4];
+        const rightIdx = [1,3,5];
+        leftIdx.forEach(i => cells[i].src = dataUrl1 || placeholderDataUrl());
+        rightIdx.forEach(i => cells[i].src = dataUrl2 || placeholderDataUrl());
+      }
+
+      function placeholderDataUrl() {
+        return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(
+          '<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600">' +
+            '<rect width="100%" height="100%" fill="#ffffff"/>' +
+            '<text x="50%" y="50%" font-size="24" text-anchor="middle" fill="#9aa0a6">请上传图片并点击"生成预览"</text>' +
+          '</svg>'
+        );
+      }
+
+      img1file.addEventListener('change', async () => {
+        const f = img1file.files[0];
+        if (!f) return;
+        try {
+          const res = await readImageFile(f);
+          if (res) {
+            dataUrl1 = res.dataUrl;
+            imgObj1 = res.img;
+            thumb1.src = dataUrl1;
+          }
+        } catch (e) {
+          console.error(e);
+          alert('读取图1 出错：' + (e && e.message ? e.message : e));
+        }
+      });
+
+      img2file.addEventListener('change', async () => {
+        const f = img2file.files[0];
+        if (!f) return;
+        try {
+          const res = await readImageFile(f);
+          if (res) {
+            dataUrl2 = res.dataUrl;
+            imgObj2 = res.img;
+            thumb2.src = dataUrl2;
+          }
+        } catch (e) {
+          console.error(e);
+          alert('读取图2 出错：' + (e && e.message ? e.message : e));
+        }
+      });
+
+      generateBtn.addEventListener('click', () => {
+        if (!dataUrl1 || !dataUrl2) {
+          alert('请先上传 图1 和 图2 两张图片');
+          return;
+        }
+        fillGridWithImages();
+        a4page.scrollIntoView({behavior:'smooth'});
+      });
+
+      refreshPreviewBtn.addEventListener('click', async () => {
+        if (!imgObj1 || !imgObj2) {
+          alert('请先上传两张图片并生成预览一次');
+          return;
+        }
+        const quality = Number(qualityRange.value) || 3;
+        refreshPreviewBtn.disabled = true;
+        refreshPreviewBtn.textContent = '正在用当前质量重绘预览...';
+        try {
+          function resampleImageToDataURL(img, factor) {
+            const maxSide = 10000; // 安全上限 px
+            let w = Math.round(img.naturalWidth * factor);
+            let h = Math.round(img.naturalHeight * factor);
+            const maxActual = Math.max(w, h);
+            if (maxActual > maxSide) {
+              const scaleDown = maxSide / maxActual;
+              w = Math.round(w * scaleDown);
+              h = Math.round(h * scaleDown);
+            }
+            const c = document.createElement('canvas');
+            c.width = w;
+            c.height = h;
+            const ctx = c.getContext('2d');
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0,0,w,h);
+            ctx.drawImage(img, 0, 0, w, h);
+            return c.toDataURL('image/png');
+          }
+
+          const dpr = window.devicePixelRatio || 1;
+          const factor = quality * Math.max(1, dpr);
+
+          const [r1, r2] = await Promise.all([
+            new Promise(resolve => { resolve(resampleImageToDataURL(imgObj1, factor)); }),
+            new Promise(resolve => { resolve(resampleImageToDataURL(imgObj2, factor)); })
+          ]);
+
+          dataUrl1 = r1;
+          dataUrl2 = r2;
+          thumb1.src = dataUrl1;
+          thumb2.src = dataUrl2;
+
+          fillGridWithImages();
+        } catch (e) {
+          console.error(e);
+          alert('刷新预览时出错：' + (e && e.message ? e.message : e));
+        } finally {
+          refreshPreviewBtn.disabled = false;
+          refreshPreviewBtn.textContent = '用当前质量刷新预览';
+        }
+      });
+
+      downloadPdfBtn.addEventListener('click', async () => {
+        if (!dataUrl1 || !dataUrl2) {
+          alert('请先上传并生成预览');
+          return;
+        }
+
+        downloadPdfBtn.disabled = true;
+        downloadPdfBtn.textContent = '正在生成 PDF...（可能需几秒）';
+
+        try {
+          const quality = Number(qualityRange.value) || 3;
+          const scale = Math.max(1, quality) * (window.devicePixelRatio || 1);
+
+          const canvas = await html2canvas(a4page, {
+            scale: scale,
+            useCORS: true,
+            backgroundColor: '#ffffff',
+            allowTaint: false,
+            logging: false
+          });
+
+          const imgData = canvas.toDataURL('image/jpeg', 0.95);
+          const { jsPDF } = window.jspdf;
+          const pdf = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
+
+          const pageWidth = 210;
+          const pageHeight = 297;
+
+          pdf.addImage(imgData, 'JPEG', 0, 0, pageWidth, pageHeight, undefined, 'FAST');
+          pdf.save('a4-2x3-images-no-borders.pdf');
+
+        } catch (e) {
+          console.error(e);
+          alert('导出 PDF 时出错：' + (e && e.message ? e.message : e));
+        } finally {
+          downloadPdfBtn.disabled = false;
+          downloadPdfBtn.textContent = '导出为 PDF（A4）';
+        }
+      });
+
+      (function initPlaceholders(){
+        const p = placeholderDataUrl();
+        dataUrl1 = p; dataUrl2 = p;
+        cells.forEach(img => img.src = p);
+        thumb1.src = p;
+        thumb2.src = p;
+      })();
+
+    })();
+  </script>
+</body>
+</html>
